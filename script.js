@@ -8,11 +8,12 @@ const sizes = {
     '4R': {w: 102, h: 152}, '8R': {w: 203, h: 254} 
 };
 
-// GANTI MODE
+// --- FUNGSI GANTI MODE ---
 function switchMode(mode) {
     currentMode = mode;
-    document.getElementById('btn-mode-cetak').classList.toggle('active', mode === 'cetak');
-    document.getElementById('btn-mode-bg').classList.toggle('active', mode === 'bg-remover');
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    if(mode === 'cetak') document.getElementById('btn-mode-cetak').classList.add('active');
+    else document.getElementById('btn-mode-bg').classList.add('active');
 
     document.getElementById('control-cetak').classList.toggle('mode-hidden', mode === 'bg-remover');
     document.getElementById('paper-view').classList.toggle('mode-hidden', mode === 'bg-remover');
@@ -20,8 +21,10 @@ function switchMode(mode) {
     document.getElementById('main-download-btn').classList.toggle('mode-hidden', mode === 'bg-remover');
 
     renderPhotoList();
+    updatePreview();
 }
 
+// --- FUNGSI UPDATE PROGRES ---
 function updateProgress(val) {
     const fill = document.getElementById('progress-fill');
     const txt = document.getElementById('percent-val');
@@ -29,17 +32,24 @@ function updateProgress(val) {
     if(txt) txt.innerText = Math.floor(val) + '%';
 }
 
+// --- LOGIKA UPLOAD & ANTREAN ---
 async function handleUpload(event) {
-    uploadQueue.push(...Array.from(event.target.files));
+    const files = Array.from(event.target.files);
+    uploadQueue.push(...files);
     if (!isProcessing) processQueue();
 }
 
 async function processQueue() {
     if (uploadQueue.length === 0) {
         isProcessing = false;
-        setTimeout(() => document.getElementById('loading').style.display='none', 1000);
+        // Tunggu sebentar sebelum menutup loader agar user melihat 100%
+        setTimeout(() => {
+            document.getElementById('loading').style.display = 'none';
+            updateProgress(0);
+        }, 800);
         return;
     }
+
     isProcessing = true;
     document.getElementById('loading').style.display = 'block';
     const file = uploadQueue.shift();
@@ -52,9 +62,11 @@ async function processQueue() {
 
     try {
         let p = 10;
-        const interval = setInterval(() => { if(p < 90) { p += 2; updateProgress(p); } }, 150);
+        const interval = setInterval(() => { if(p < 90) { p += 1; updateProgress(p); } }, 100);
+        
         const blob = await imglyRemoveBackground(file);
         clearInterval(interval);
+        
         const noBg = URL.createObjectURL(blob);
         photos.push({ original: base64, noBg: noBg, current: base64, qty: 1, offset: 50 });
     } catch (e) {
@@ -62,27 +74,48 @@ async function processQueue() {
     }
     
     updateProgress(100);
-    setTimeout(() => { renderPhotoList(); updatePreview(); processQueue(); }, 500);
+    
+    // PENTING: Langsung panggil render agar preview muncul tanpa delay
+    renderPhotoList();
+    updatePreview();
+    
+    // Lanjut ke antrean berikutnya
+    setTimeout(processQueue, 300);
 }
 
+// --- FUNGSI GANTI BACKGROUND ---
 async function changeBg(index, color) {
     document.getElementById('loading').style.display = 'block';
-    document.getElementById('status-msg').innerText = "Ganti Warna...";
+    document.getElementById('status-msg').innerText = "Cat Ulang...";
     let prg = 0;
     const interval = setInterval(() => { prg += 10; updateProgress(prg); if(prg>=100) clearInterval(interval); }, 30);
 
     const p = photos[index];
-    if (color === 'original') { p.current = p.original; } 
-    else {
-        const canvas = document.getElementById('tempCanvas'); const ctx = canvas.getContext('2d');
-        const img = new Image(); img.src = p.noBg; await new Promise(r => img.onload = r);
-        canvas.width = img.width; canvas.height = img.height;
-        ctx.fillStyle = color; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img,0,0); p.current = canvas.toDataURL('image/png');
+    if (color === 'original') {
+        p.current = p.original;
+    } else {
+        const canvas = document.getElementById('tempCanvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.src = p.noBg;
+        await new Promise(r => img.onload = r);
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.fillStyle = color;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0);
+        p.current = canvas.toDataURL('image/png');
     }
-    setTimeout(() => { renderPhotoList(); updatePreview(); document.getElementById('loading').style.display='none'; }, 500);
+    
+    updateProgress(100);
+    setTimeout(() => {
+        renderPhotoList();
+        updatePreview();
+        document.getElementById('loading').style.display = 'none';
+    }, 400);
 }
 
+// --- FUNGSI TAMPILKAN DAFTAR FOTO ---
 function renderPhotoList() {
     const container = document.getElementById('photoListContainer');
     container.innerHTML = '';
@@ -113,6 +146,7 @@ function renderPhotoList() {
     });
 }
 
+// --- FUNGSI PREVIEW KERTAS A4 ---
 function updatePreview() {
     const paper = document.getElementById('paper');
     if (!paper) return;
@@ -125,13 +159,23 @@ function updatePreview() {
 
     photos.forEach(p => {
         for(let i=0; i<p.qty; i++) {
-            const w = sz.w * scale, h = sz.h * scale;
+            const w = sz.w * scale;
+            const h = sz.h * scale;
             if (x + w > paper.offsetWidth - margin) { x = margin; y += h + 1; }
             if (y + h > paper.offsetHeight - margin) break;
             const div = document.createElement('div');
             div.className = 'preview-photo';
-            Object.assign(div.style, { width: w+'px', height: h+'px', left: x+'px', top: y+'px', backgroundImage: `url(${p.current})`, backgroundPosition: `center ${p.offset}%` });
-            paper.appendChild(div); x += w + 1;
+            Object.assign(div.style, { 
+                width: w+'px', 
+                height: h+'px', 
+                left: x+'px', 
+                top: y+'px', 
+                backgroundImage: `url(${p.current})`, 
+                backgroundPosition: `center ${p.offset}%`,
+                backgroundSize: 'cover'
+            });
+            paper.appendChild(div); 
+            x += w + 1;
         }
     });
 }
