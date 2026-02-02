@@ -1,129 +1,64 @@
-let photos = [];
-const sizes = { 
-    '2x3': {w: 21, h: 30}, '3x4': {w: 28, h: 38}, '4x6': {w: 38, h: 56},
-    '4R': {w: 102, h: 152}, '8R': {w: 203, h: 254}
-};
-
-async function handleUpload(event) {
-    const files = event.target.files;
-    const loader = document.getElementById('loading');
-    for (let file of files) {
-        loader.style.display = 'block';
-        const originalSrc = await fileToBox64(file);
-        try {
-            const blob = await imglyRemoveBackground(file);
-            const noBgSrc = URL.createObjectURL(blob);
-            photos.push({ original: originalSrc, noBg: noBgSrc, current: originalSrc, qty: 1 });
-        } catch (e) {
-            photos.push({ original: originalSrc, current: originalSrc, qty: 1 });
-        }
-        loader.style.display = 'none';
-        renderPhotoList();
-        updatePreview();
-    }
+:root {
+    --primary: #2563eb;
+    --bg-card: rgba(255, 255, 255, 0.92);
 }
 
-function fileToBox64(file) {
-    return new Promise(res => {
-        const reader = new FileReader();
-        reader.onload = e => res(e.target.result);
-        reader.readAsDataURL(file);
-    });
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), 
+                url('bg-fnd.jpg') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0; padding: 20px; 
+    display: flex; flex-direction: column; gap: 20px;
+    min-height: 100vh;
 }
 
-function renderPhotoList() {
-    const container = document.getElementById('photoListContainer');
-    container.innerHTML = '';
-    photos.forEach((photo, index) => {
-        const div = document.createElement('div');
-        div.className = 'photo-item';
-        div.innerHTML = `
-            <img src="${photo.current}">
-            <div style="flex:1">
-                <label style="font-size:12px">Jumlah:</label>
-                <input type="number" value="${photo.qty}" min="1" onchange="updateQty(${index}, this.value)" style="width:45px; padding:4px; border-radius:5px; border:1px solid #ddd;">
-                <div class="bg-options">
-                    <button class="bg-btn" onclick="changeBg(${index}, 'original')">Asli</button>
-                    <button class="bg-btn bg-red" onclick="changeBg(${index}, '#ff0000')">Merah</button>
-                    <button class="bg-btn bg-blue" onclick="changeBg(${index}, '#0000ff')">Biru</button>
-                </div>
-                <div style="display:flex; gap:5px; margin-top:8px;">
-                    <button onclick="downloadSingle(${index})" style="font-size:10px; cursor:pointer; flex:1; padding:5px; border-radius:4px; border:1px solid #ddd; background:white;">💾 PNG</button>
-                    <button onclick="removePhoto(${index})" style="color:red; border:none; background:none; cursor:pointer; font-size:10px;">✕ Hapus</button>
-                </div>
-            </div>
-        `;
-        container.appendChild(div);
-    });
+@media (min-width: 1024px) {
+    body { flex-direction: row; justify-content: center; align-items: flex-start; }
+    .sidebar { width: 400px; position: sticky; top: 20px; max-height: 90vh; }
 }
 
-async function changeBg(index, color) {
-    const photo = photos[index];
-    const selectedSize = sizes[document.getElementById('size').value];
-    const canvas = document.getElementById('tempCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    if (color === 'original') {
-        photo.current = photo.original;
-    } else {
-        const img = new Image();
-        img.src = photo.noBg;
-        await new Promise(r => img.onload = r);
-        canvas.width = (selectedSize.w / 10) * 118; canvas.height = (selectedSize.h / 10) * 118;
-        ctx.fillStyle = color;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        const scale = Math.max(canvas.width/img.width, canvas.height/img.height);
-        ctx.drawImage(img, (canvas.width/2)-(img.width/2)*scale, (canvas.height/2)-(img.height/2)*scale, img.width*scale, img.height*scale);
-        photo.current = canvas.toDataURL('image/png');
-    }
-    renderPhotoList();
-    updatePreview();
+.sidebar { 
+    background: var(--bg-card); padding: 25px; border-radius: 15px; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow-y: auto; 
+    backdrop-filter: blur(10px); border: 1px solid #e2e8f0;
 }
 
-function downloadSingle(index) {
-    const link = document.createElement('a');
-    link.download = `fnd-${Date.now()}.png`;
-    link.href = photos[index].current;
-    link.click();
+h2 { margin: 0; color: var(--primary); font-size: 24px; }
+.subtitle { font-size: 13px; color: #64748b; margin: 5px 0 20px 0; }
+
+.control-group { margin-bottom: 15px; }
+label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+
+select, input[type="file"] { 
+    width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;
 }
 
-function removePhoto(index) { photos.splice(index, 1); renderPhotoList(); updatePreview(); }
-function updateQty(index, val) { photos[index].qty = parseInt(val) || 1; updatePreview(); }
+.photo-item { 
+    display: flex; gap: 10px; background: white; padding: 10px; 
+    border-radius: 10px; margin-top: 10px; border: 1px solid #eee;
+}
+.photo-item img { width: 60px; height: 80px; object-fit: cover; border-radius: 5px; }
 
-function updatePreview() {
-    const paper = document.getElementById('paper');
-    paper.innerHTML = '';
-    const selectedSize = sizes[document.getElementById('size').value];
-    const scaleFactor = (paper.offsetWidth - 24) / 210; 
-    let curX = 12; let curY = 12;
+.bg-options { display: flex; gap: 4px; margin: 8px 0; }
+.bg-btn { flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; }
 
-    photos.forEach(photo => {
-        for(let i = 0; i < photo.qty; i++) {
-            const wPx = selectedSize.w * scaleFactor;
-            const hPx = selectedSize.h * scaleFactor;
-            if (curX + wPx > paper.offsetWidth - 12) { curX = 12; curY += hPx + 4; }
-            if (curY + hPx > paper.offsetHeight - 12) break;
-            const imgDiv = document.createElement('div');
-            imgDiv.className = 'preview-photo';
-            Object.assign(imgDiv.style, { width: wPx+'px', height: hPx+'px', left: curX+'px', top: curY+'px', backgroundImage: `url(${photo.current})` });
-            paper.appendChild(imgDiv);
-            curX += wPx + 4;
-        }
-    });
+.btn-print { 
+    background: var(--primary); color: white; border: none; padding: 15px; 
+    border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px;
 }
 
-async function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const selectedSize = sizes[document.getElementById('size').value];
-    let curX = 10; let curY = 10;
-    for (let photo of photos) {
-        for (let i = 0; i < photo.qty; i++) {
-            if (curX + selectedSize.w > 200) { curX = 10; curY += selectedSize.h + 2; }
-            if (curY + selectedSize.h > 285) { pdf.addPage(); curX = 10; curY = 10; }
-            pdf.addImage(photo.current, 'PNG', curX, curY, selectedSize.w, selectedSize.h);
-            curX += selectedSize.w + 2;
-        }
-    }
-    pdf.save("hasil-cetak-fnd.pdf");
+.main-content { flex: 1; display: flex; flex-direction: column; align-items: center; }
+
+.paper-container { width: 100%; display: flex; justify-content: center; overflow-x: auto; }
+
+.paper-a4 {
+    width: 500px; height: 707px; /* Skala A4 */
+    background: white; position: relative; border: 1px solid #ccc;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
+
+.preview-photo { position: absolute; background-size: cover; border: 0.1mm solid #ddd; }
+
+#loading { display: none; background: #eff6ff; color: #1e40af; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 13px; }
+hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
