@@ -1,30 +1,26 @@
 let photos = [];
 let uploadQueue = [];
 let isProcessing = false;
-let currentMode = localStorage.getItem('fnd_mode') || 'cetak';
+let currentMode = 'cetak';
 
-const sizes = { '2x3': {w: 21, h: 30}, '3x4': {w: 28, h: 38}, '4x6': {w: 38, h: 56}, '4R': {w: 102, h: 152}, '8R': {w: 203, h: 254} };
-
-window.onload = () => {
-    const saved = localStorage.getItem('fnd_photos');
-    if (saved) { photos = JSON.parse(saved); renderPhotoList(); updatePreview(); }
-    switchMode(currentMode);
+const sizes = { 
+    '2x3': {w: 21, h: 30}, '3x4': {w: 28, h: 38}, '4x6': {w: 38, h: 56}, 
+    '4R': {w: 102, h: 152}, '8R': {w: 203, h: 254} 
 };
 
-function saveAll() {
-    localStorage.setItem('fnd_photos', JSON.stringify(photos));
-    localStorage.setItem('fnd_mode', currentMode);
-}
-
+// --- FUNGSI NAVIGASI MODE ---
 function switchMode(mode) {
     currentMode = mode;
     document.getElementById('btn-mode-cetak').className = mode === 'cetak' ? 'nav-link active' : 'nav-link';
     document.getElementById('btn-mode-bg').className = mode === 'bg-remover' ? 'nav-link active' : 'nav-link';
+    
     document.getElementById('control-cetak').classList.toggle('hidden', mode === 'bg-remover');
     document.getElementById('paper-view').classList.toggle('hidden', mode === 'bg-remover');
     document.getElementById('bg-welcome').classList.toggle('hidden', mode === 'cetak');
     document.getElementById('main-download-btn').classList.toggle('hidden', mode === 'bg-remover');
-    saveAll(); renderPhotoList(); updatePreview();
+    
+    renderPhotoList(); 
+    updatePreview();
 }
 
 function updateProgress(val) {
@@ -32,26 +28,41 @@ function updateProgress(val) {
     document.getElementById('percent-val').innerText = Math.floor(val) + '%';
 }
 
+// --- OPTIMASI GAMBAR AGAR AI RINGAN ---
 async function compressImage(file) {
     return new Promise(res => {
-        const img = new Image(); img.src = URL.createObjectURL(file);
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const scale = Math.min(1, 800 / Math.max(img.width, img.height));
-            canvas.width = img.width * scale; canvas.height = img.height * scale;
-            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             canvas.toBlob(blob => res(blob), 'image/jpeg', 0.85);
         };
     });
 }
 
+// --- LOGIKA UPLOAD & PROSES AI ---
 async function handleUpload(event) {
-    uploadQueue.push(...Array.from(event.target.files));
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+    uploadQueue.push(...files);
     if (!isProcessing) processQueue();
 }
 
 async function processQueue() {
-    if (uploadQueue.length === 0) { isProcessing = false; setTimeout(() => { document.getElementById('loading').style.display='none'; updateProgress(0); }, 800); return; }
+    if (uploadQueue.length === 0) { 
+        isProcessing = false; 
+        setTimeout(() => {
+            document.getElementById('loading').style.display='none';
+            updateProgress(0);
+        }, 800); 
+        return; 
+    }
+    
     isProcessing = true;
     document.getElementById('loading').style.display = 'block';
     const file = uploadQueue.shift();
@@ -61,47 +72,70 @@ async function processQueue() {
         updateProgress(10);
         const fastBlob = await compressImage(file);
         updateProgress(30);
+        
         const blob = await imglyRemoveBackground(fastBlob);
-        const noBg = await new Promise(res => { const r = new FileReader(); r.onloadend = () => res(r.result); r.readAsDataURL(blob); });
-        const original = await new Promise(res => { const r = new FileReader(); r.onloadend = () => res(r.result); r.readAsDataURL(fastBlob); });
+        const noBg = URL.createObjectURL(blob);
+        const original = await new Promise(res => {
+            const r = new FileReader();
+            r.onloadend = () => res(r.result);
+            r.readAsDataURL(fastBlob);
+        });
         
         photos.push({ original, noBg, current: original, qty: 1, offset: 50 });
-        saveAll(); updateProgress(100); renderPhotoList(); updatePreview();
+        
+        updateProgress(100);
+        renderPhotoList(); 
+        updatePreview();
         setTimeout(processQueue, 300);
-    } catch (e) { console.error(e); processQueue(); }
+    } catch (e) {
+        console.error("Gagal memproses AI:", e);
+        processQueue();
+    }
 }
 
+// --- FUNGSI GANTI BACKGROUND ---
 async function changeBg(index, color) {
     const p = photos[index];
-    if (color === 'original') { p.current = p.original; } 
-    else {
-        const canvas = document.getElementById('tempCanvas'); const ctx = canvas.getContext('2d');
-        const img = new Image(); img.src = p.noBg; await new Promise(r => img.onload = r);
-        canvas.width = img.width; canvas.height = img.height;
-        ctx.fillStyle = color; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img,0,0); p.current = canvas.toDataURL('image/png');
+    if (color === 'original') {
+        p.current = p.original;
+    } else {
+        const canvas = document.getElementById('tempCanvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.src = p.noBg;
+        await new Promise(r => img.onload = r);
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.fillStyle = color;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img, 0, 0);
+        p.current = canvas.toDataURL('image/png');
     }
-    saveAll(); renderPhotoList(); updatePreview();
+    renderPhotoList();
+    updatePreview();
 }
 
+// --- TAMPILAN DAFTAR FOTO ---
 function renderPhotoList() {
     const container = document.getElementById('photoListContainer');
     container.innerHTML = '';
-    const sz = sizes[document.getElementById('size').value];
+    const sizeVal = document.getElementById('size').value;
+    const sz = sizes[sizeVal];
     const boxH = (sz.h / sz.w) * 70;
+    
     photos.forEach((p, i) => {
         const isBg = currentMode === 'bg-remover';
         const div = document.createElement('div');
         div.className = 'photo-item';
         div.innerHTML = `
-            <div style="display:flex; gap:10px; align-items:center;">
-                <div style="width:70px; height:${boxH}px; border:2px solid var(--blue); border-radius:8px; overflow:hidden; background-image:url('${p.current}'); background-size:cover; background-position:center ${p.offset}%"></div>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <div style="width:70px; height:${boxH}px; border:2px solid #2563eb; border-radius:10px; overflow:hidden; background-image:url('${p.current}'); background-size:cover; background-position:center ${p.offset}%"></div>
                 <div style="flex:1">
-                    <input type="range" style="width:100%" min="0" max="100" value="${p.offset}" oninput="photos[${i}].offset=this.value;updatePreview();renderPhotoList();saveAll()">
+                    <input type="range" style="width:100%" min="0" max="100" value="${p.offset}" oninput="photos[${i}].offset=this.value; updatePreview(); renderPhotoList()">
                     <div style="display:flex; gap:5px; margin-top:5px">
-                        ${!isBg ? `<input type="number" value="${p.qty}" onchange="photos[${i}].qty=parseInt(this.value);updatePreview();saveAll()" style="width:40px;">` : ''}
-                        <button onclick="downloadManualCrop(${i})" style="flex:1; background:#059669; color:#fff; border:none; padding:8px; border-radius:6px; font-weight:800; cursor:pointer">💾 DOWNLOAD</button>
-                        <button onclick="photos.splice(${i},1);renderPhotoList();updatePreview();saveAll()" style="background:#ef4444; color:#fff; border:none; padding:8px; border-radius:8px;">🗑️</button>
+                        ${!isBg ? `<input type="number" value="${p.qty}" onchange="photos[${i}].qty=parseInt(this.value); updatePreview()" style="width:40px; border-radius:5px; border:1px solid #ddd;">` : ''}
+                        <button onclick="downloadManualCrop(${i})" style="flex:1; background:#059669; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:800; cursor:pointer">💾 DOWNLOAD</button>
+                        <button onclick="photos.splice(${i},1); renderPhotoList(); updatePreview()" style="background:#ef4444; color:#fff; border:none; padding:8px; border-radius:8px; cursor:pointer">🗑️</button>
                     </div>
                 </div>
             </div>
@@ -118,6 +152,7 @@ function renderPhotoList() {
     });
 }
 
+// --- PREVIEW KERTAS A4 ---
 function updatePreview() {
     const paper = document.getElementById('paper');
     if (!paper || currentMode === 'bg-remover') return;
@@ -125,6 +160,7 @@ function updatePreview() {
     const sz = sizes[document.getElementById('size').value];
     const scale = paper.offsetWidth / 210;
     let x = 5, y = 5;
+    
     photos.forEach(p => {
         for(let i=0; i<p.qty; i++) {
             const w = sz.w * scale, h = sz.h * scale;
@@ -132,12 +168,18 @@ function updatePreview() {
             if (y + h > paper.offsetHeight - 5) break;
             const div = document.createElement('div');
             div.className = 'preview-photo';
-            Object.assign(div.style, { width: w+'px', height: h+'px', left: x+'px', top: y+'px', backgroundImage: `url(${p.current})`, backgroundPosition: `center ${p.offset}%` });
-            paper.appendChild(div); x += w + 1;
+            Object.assign(div.style, { 
+                width: w+'px', height: h+'px', left: x+'px', top: y+'px', 
+                backgroundImage: `url(${p.current})`, 
+                backgroundPosition: `center ${p.offset}%` 
+            });
+            paper.appendChild(div); 
+            x += w + 1;
         }
     });
 }
 
+// --- FUNGSI EXPORT PDF & DOWNLOAD ---
 function getCleanCrop(ctx, img, canvas, offset) {
     const iR = img.width / img.height; const cR = canvas.width / canvas.height;
     let dW, dH, dX, dY;
@@ -174,3 +216,4 @@ async function generatePDF() {
     }
     pdf.save("Studio-FnD.pdf");
 }
+    
