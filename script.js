@@ -34,19 +34,23 @@ function fileToBox64(file) {
 function renderPhotoList() {
     const container = document.getElementById('photoListContainer');
     container.innerHTML = '';
-    photos.forEach((p, i) => {
+    photos.forEach((photo, index) => {
         const div = document.createElement('div');
         div.className = 'photo-item';
         div.innerHTML = `
-            <img src="${p.current}">
+            <img src="${photo.current}">
             <div style="flex:1">
-                <input type="number" value="${p.qty}" min="1" onchange="updateQty(${i}, this.value)" style="width:40px">
-                <div style="margin-top:5px">
-                    <button class="bg-btn" onclick="changeBg(${i}, 'original')">Asli</button>
-                    <button class="bg-btn" style="background:red;color:white" onclick="changeBg(${i}, '#ff0000')">Merah</button>
-                    <button class="bg-btn" style="background:blue;color:white" onclick="changeBg(${i}, '#0000ff')">Biru</button>
+                <label style="font-size:12px">Jumlah Cetak:</label>
+                <input type="number" value="${photo.qty}" min="1" onchange="updateQty(${index}, this.value)" style="width:50px;">
+                <div class="bg-options">
+                    <button class="bg-btn" onclick="changeBg(${index}, 'original')">Asli</button>
+                    <button class="bg-btn bg-red" onclick="changeBg(${index}, '#ff0000')">Merah</button>
+                    <button class="bg-btn bg-blue" onclick="changeBg(${index}, '#0000ff')">Biru</button>
                 </div>
-                <button onclick="downloadSingle(${i})" style="font-size:10px; margin-top:5px; cursor:pointer">💾 PNG</button>
+                <div style="display:flex; gap:5px;">
+                    <button onclick="downloadSingle(${index})" style="font-size:10px; cursor:pointer; flex:1; padding:5px;">💾 Simpan PNG</button>
+                    <button onclick="removePhoto(${index})" style="color:red; border:none; background:none; cursor:pointer; font-size:10px;">✕ Hapus</button>
+                </div>
             </div>
         `;
         container.appendChild(div);
@@ -55,50 +59,55 @@ function renderPhotoList() {
 
 async function changeBg(index, color) {
     const photo = photos[index];
+    const selectedSize = sizes[document.getElementById('size').value];
+    const canvas = document.getElementById('tempCanvas');
+    const ctx = canvas.getContext('2d');
+    
     if (color === 'original') {
         photo.current = photo.original;
     } else {
-        const canvas = document.getElementById('tempCanvas');
-        const ctx = canvas.getContext('2d');
         const img = new Image();
         img.src = photo.noBg;
         await new Promise(r => img.onload = r);
-        canvas.width = img.width; canvas.height = img.height;
+        canvas.width = (selectedSize.w / 10) * 118; canvas.height = (selectedSize.h / 10) * 118;
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        const scale = Math.max(canvas.width/img.width, canvas.height/img.height);
+        ctx.drawImage(img, (canvas.width/2)-(img.width/2)*scale, (canvas.height/2)-(img.height/2)*scale, img.width*scale, img.height*scale);
         photo.current = canvas.toDataURL('image/png');
     }
     renderPhotoList();
     updatePreview();
 }
 
-function downloadSingle(i) {
-    const a = document.createElement('a');
-    a.download = `foto-${Date.now()}.png`;
-    a.href = photos[i].current;
-    a.click();
+function downloadSingle(index) {
+    const link = document.createElement('a');
+    link.download = `foto-fnd-${Date.now()}.png`;
+    link.href = photos[index].current;
+    link.click();
 }
 
+function removePhoto(index) { photos.splice(index, 1); renderPhotoList(); updatePreview(); }
 function updateQty(index, val) { photos[index].qty = parseInt(val) || 1; updatePreview(); }
 
 function updatePreview() {
     const paper = document.getElementById('paper');
     paper.innerHTML = '';
     const selectedSize = sizes[document.getElementById('size').value];
-    const scale = (paper.offsetWidth - 20) / 210; 
-    let x = 10, y = 10;
+    const scaleFactor = (paper.offsetWidth - 30) / 210; 
+    let curX = 15; let curY = 15;
 
-    photos.forEach(p => {
-        for(let i=0; i<p.qty; i++) {
-            const w = selectedSize.w * scale, h = selectedSize.h * scale;
-            if (x + w > paper.offsetWidth - 10) { x = 10; y += h + 4; }
-            if (y + h > paper.offsetHeight - 10) break;
-            const div = document.createElement('div');
-            div.className = 'preview-photo';
-            Object.assign(div.style, { width: w+'px', height: h+'px', left: x+'px', top: y+'px', backgroundImage: `url(${p.current})` });
-            paper.appendChild(div);
-            x += w + 4;
+    photos.forEach(photo => {
+        for(let i = 0; i < photo.qty; i++) {
+            const wPx = selectedSize.w * scaleFactor;
+            const hPx = selectedSize.h * scaleFactor;
+            if (curX + wPx > paper.offsetWidth - 15) { curX = 15; curY += hPx + 4; }
+            if (curY + hPx > paper.offsetHeight - 15) break;
+            const imgDiv = document.createElement('div');
+            imgDiv.className = 'preview-photo';
+            Object.assign(imgDiv.style, { width: wPx+'px', height: hPx+'px', left: curX+'px', top: curY+'px', backgroundImage: `url(${photo.current})` });
+            paper.appendChild(imgDiv);
+            curX += wPx + 4;
         }
     });
 }
@@ -106,15 +115,15 @@ function updatePreview() {
 async function generatePDF() {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const sz = sizes[document.getElementById('size').value];
-    let x = 10, y = 10;
-    for (let p of photos) {
-        for (let i=0; i<p.qty; i++) {
-            if (x + sz.w > 200) { x = 10; y += sz.h + 2; }
-            if (y + sz.h > 285) { pdf.addPage(); x = 10; y = 10; }
-            pdf.addImage(p.current, 'PNG', x, y, sz.w, sz.h);
-            x += sz.w + 2;
+    const selectedSize = sizes[document.getElementById('size').value];
+    let curX = 10; let curY = 10;
+    for (let photo of photos) {
+        for (let i = 0; i < photo.qty; i++) {
+            if (curX + selectedSize.w > 200) { curX = 10; curY += selectedSize.h + 3; }
+            if (curY + selectedSize.h > 285) { pdf.addPage(); curX = 10; curY = 10; }
+            pdf.addImage(photo.current, 'PNG', curX, curY, selectedSize.w, selectedSize.h);
+            curX += selectedSize.w + 3;
         }
     }
-    pdf.save("cetak.pdf");
+    pdf.save("cetak-foto-fnd.pdf");
 }
