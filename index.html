@@ -273,6 +273,52 @@ footer .foot{
   background-clip:text;
   color:transparent;
 }
+  /* ===== Footer rapih + aestetich (TAMBAHAN) ===== */
+.site-footer{
+  text-align:center;
+  padding:18px 16px 22px;
+  background: rgba(255,255,255,.55);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(231,234,240,.9);
+}
+
+.footer-link{
+  display:inline-block;
+  padding:10px 16px;
+  border-radius:999px;
+  font-weight:900;
+  font-size:13px;
+  text-decoration:none;
+  color:#fff;
+  background: linear-gradient(90deg, rgba(109,40,217,.95), rgba(34,197,94,.85));
+  box-shadow: 0 10px 22px rgba(2,6,23,.16);
+  transition: transform .12s ease, filter .12s ease;
+}
+.footer-link:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.footer-safe{
+  margin-top:8px;
+  font-size:11px;
+  color:#64748b;
+}
+
+.footer-brand{
+  margin-top:14px;
+  font-family:Poppins, Inter, system-ui;
+  font-weight:900;
+  letter-spacing:1.8px;
+  font-size:16px;
+  text-transform:uppercase;
+  background: linear-gradient(90deg, rgba(15,23,42,.95), rgba(109,40,217,.95));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  opacity:.95;
+}
+
 </style>
 </head>
 
@@ -357,26 +403,23 @@ footer .foot{
   </div>
 </div>
 
-<footer>
-  <div class="foot">FnD Edit Foto</div>
+<footer class="site-footer">
+  <a class="footer-link"
+     href="https://gemini.google.com/share/d726d144f51a"
+     target="_blank"
+     rel="noopener noreferrer">
+    Ganti warna latar
+  </a>
 
-  <div class="footer-note">
-    1) Edit & download foto di sini  
-    2) Klik 
-    <a href="https://gemini.google.com/share/d726d144f51a"
-       target="_blank"
-       rel="noopener noreferrer">
-       Buka Prompt di Gemini
-    </a>  
-    3) Upload foto ke Gemini  
-    <br>
+  <div class="footer-safe">
     (butuh login Google Gemini, ini aman kok)
   </div>
 
-  <div class="footer-note" style="margin-top:10px; font-weight:800;">
+  <div class="footer-brand">
     BOLEHAN SAYA
   </div>
 </footer>
+
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
