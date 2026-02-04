@@ -3,59 +3,275 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panjul CKD</title>
+  <title>Panjul CKD — Tools Edit Foto</title>
+  <meta name="description" content="Tools edit foto online: hapus background, ganti background warna, dan kebutuhan pas foto." />
   <style>
+    :root{
+      --bg:#070a12;
+      --card:#0b1222;
+      --card2:#0a1020;
+      --line:#1f2a44;
+      --text:#e9eefc;
+      --muted:#9aa7c4;
+      --accent:#22c55e;
+      --accent2:#60a5fa;
+      --warn:#f59e0b;
+      --r:18px;
+      --shadow: 0 20px 50px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
     body{
-      font-family: Arial, Helvetica, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 600px at 20% 10%, rgba(96,165,250,.22), transparent 60%),
+        radial-gradient(800px 520px at 85% 15%, rgba(34,197,94,.18), transparent 55%),
+        radial-gradient(900px 700px at 50% 100%, rgba(245,158,11,.12), transparent 60%),
+        var(--bg);
+      min-height:100vh;
+    }
+    a{color:inherit}
+    .wrap{max-width:980px;margin:0 auto;padding:22px}
+    .top{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:10px 2px 0;
+    }
+    .brand{
+      display:flex;gap:10px;align-items:center;
+      font-weight:800;letter-spacing:.2px;
+    }
+    .logo{
+      width:38px;height:38px;border-radius:12px;
+      background: linear-gradient(135deg, rgba(96,165,250,.95), rgba(34,197,94,.9));
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+    }
+    .pill{
+      display:inline-flex;gap:8px;align-items:center;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      padding:8px 12px;border-radius:999px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .hero{
+      margin-top:18px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    @media (max-width: 860px){
+      .hero{grid-template-columns:1fr}
     }
     .card{
-      background:#020617;
-      border:1px solid #1f2937;
-      border-radius:16px;
-      padding:28px;
-      max-width:420px;
-      width:90%;
-      text-align:center;
-      box-shadow:0 20px 40px rgba(0,0,0,.4);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
     }
-    h1{margin:0 0 8px;font-size:28px;}
-    p{color:#9ca3af;margin:0 0 20px;}
-    a.btn{
-      display:block;
-      padding:14px 16px;
-      border-radius:12px;
-      background:#22c55e;
-      color:#022c22;
-      font-weight:700;
+    .card .in{padding:22px}
+    h1{margin:0 0 10px;font-size:38px;line-height:1.12}
+    .sub{margin:0 0 18px;color:var(--muted);font-size:15px;line-height:1.6}
+    .ctaRow{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      padding:13px 16px;border-radius:14px;
+      border:1px solid var(--line);
       text-decoration:none;
+      font-weight:800;
+      background:rgba(255,255,255,.04);
       transition:.15s;
+      min-width: 180px;
     }
-    a.btn:hover{transform:translateY(-1px);filter:brightness(1.05);}
-    .links{margin-top:14px;}
-    .links a{
-      color:#93c5fd;
-      text-decoration:none;
-      font-size:14px;
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+    .btn.primary{
+      border-color: rgba(34,197,94,.45);
+      background: linear-gradient(135deg, rgba(34,197,94,.95), rgba(96,165,250,.65));
+      color:#03110a;
+    }
+    .btn.ghost{
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+    }
+    .grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px
+    }
+    @media (max-width: 500px){ .grid{grid-template-columns:1fr} }
+    .mini{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      border-radius:14px;padding:14px;
+    }
+    .mini b{display:block;margin-bottom:6px}
+    .mini p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .side{
+      background: linear-gradient(180deg, rgba(10,16,32,.9), rgba(10,16,32,.65));
+    }
+    .list{
+      display:flex;flex-direction:column;gap:10px;margin-top:8px
+    }
+    .item{
+      display:flex;gap:12px;align-items:flex-start;
+      padding:12px;border-radius:14px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.02);
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;margin-top:5px;
+      background: var(--accent2);
+      box-shadow:0 0 0 4px rgba(96,165,250,.15);
+      flex:0 0 auto;
+    }
+    .item h3{margin:0 0 2px;font-size:14px}
+    .item small{color:var(--muted);font-size:12px;line-height:1.5}
+    .note{
+      margin-top:14px;
+      border:1px dashed rgba(245,158,11,.45);
+      background: rgba(245,158,11,.08);
+      color: #ffd9a6;
+      border-radius:14px;
+      padding:12px 14px;
+      font-size:13px;
+      line-height:1.5;
+    }
+    footer{
+      margin:18px 0 8px;color:var(--muted);font-size:12px;
+      display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap
+    }
+    .linkRow{display:flex;gap:12px;flex-wrap:wrap}
+    .linkRow a{color:var(--muted);text-decoration:none;border-bottom:1px dotted rgba(154,167,196,.35)}
+    .linkRow a:hover{color:var(--text)}
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px;color:var(--muted);
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      padding:2px 6px;border-radius:8px;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Panjul CKD</h1>
-    <p>Tools online gratis</p>
-
-    <a class="btn" href="EditFoto/">Masuk Edit Foto</a>
-
-    <div class="links">
-      <a href="EditFoto/bg-color.html">Ganti Background Warna</a>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          Panjul CKD
+          <div style="font-size:12px;color:var(--muted);font-weight:600">Tools edit foto online</div>
+        </div>
+      </div>
+      <div class="pill">
+        <span class="kbd">Gratis</span>
+        <span>•</span>
+        <span>Tanpa ribet</span>
+      </div>
     </div>
+
+    <div class="hero">
+      <section class="card">
+        <div class="in">
+          <h1>Edit Foto Cepat, Hasil Rapi.</h1>
+          <p class="sub">
+            Buat pas foto, ganti background warna, dan kebutuhan edit simpel lainnya.
+            Tinggal pilih tool → upload foto → jadi.
+          </p>
+
+          <div class="ctaRow">
+            <a class="btn primary" href="EditFoto/">🚀 Masuk Edit Foto</a>
+            <a class="btn ghost" href="EditFoto/bg-color.html">🎨 Ganti Background Warna</a>
+          </div>
+
+          <div class="grid">
+            <div class="mini">
+              <b>Pas Foto</b>
+              <p>Rapihin background & siap cetak. Cocok buat sekolah/kerja.</p>
+            </div>
+            <div class="mini">
+              <b>Background Warna</b>
+              <p>Merah / biru / putih sesuai kebutuhan.</p>
+            </div>
+            <div class="mini">
+              <b>Hasil Cepat</b>
+              <p>Proses simpel, cocok buat HP & laptop.</p>
+            </div>
+            <div class="mini">
+              <b>Support</b>
+              <p>Butuh fitur tambahan? tinggal update webnya.</p>
+            </div>
+          </div>
+
+          <div class="note">
+            Tips: kalau ada gambar / file yang nggak muncul, biasanya karena path file beda folder.
+            Pastikan semua file edit foto ada di folder <b>EditFoto/</b>.
+          </div>
+        </div>
+      </section>
+
+      <aside class="card side">
+        <div class="in">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <h2 style="margin:0;font-size:16px;">Menu Utama</h2>
+            <span class="pill" style="padding:6px 10px;font-size:12px;">v1</span>
+          </div>
+
+          <div class="list" style="margin-top:12px;">
+            <div class="item">
+              <span class="dot"></span>
+              <div>
+                <h3>Masuk Edit Foto</h3>
+                <small>Buka tool utama (upload & edit).</small><br>
+                <a href="EditFoto/" style="font-size:13px;color:#bfe3ff;text-decoration:none;border-bottom:1px dotted rgba(191,227,255,.4);">Buka sekarang</a>
+              </div>
+            </div>
+
+            <div class="item">
+              <span class="dot" style="background:var(--accent);box-shadow:0 0 0 4px rgba(34,197,94,.15)"></span>
+              <div>
+                <h3>Ganti Background Warna</h3>
+                <small>Merah/biru/putih untuk pas foto.</small><br>
+                <a href="EditFoto/bg-color.html" style="font-size:13px;color:#c9ffda;text-decoration:none;border-bottom:1px dotted rgba(201,255,218,.4);">Buka tool</a>
+              </div>
+            </div>
+
+            <div class="item">
+              <span class="dot" style="background:var(--warn);box-shadow:0 0 0 4px rgba(245,158,11,.14)"></span>
+              <div>
+                <h3>Kontak / WA</h3>
+                <small>Kalau mau buat versi jasa, pasang tombol order.</small><br>
+                <!-- GANTI nomor WA lu di bawah (format: 62xxxxxxxxxx) -->
+                <a href="https://wa.me/62xxxxxxxxxxx" target="_blank" rel="noopener"
+                   style="font-size:13px;color:#ffd9a6;text-decoration:none;border-bottom:1px dotted rgba(255,217,166,.4);">
+                  Chat WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6">
+            Shortcut:
+            <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;">
+              <span class="kbd">/EditFoto/</span>
+              <span class="kbd">/EditFoto/bg-color.html</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <div>© <span id="y"></span> Panjul CKD</div>
+      <div class="linkRow">
+        <a href="EditFoto/">Edit Foto</a>
+        <a href="EditFoto/bg-color.html">BG Color</a>
+        <a href="https://github.com/panjul-ckd" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </footer>
   </div>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
